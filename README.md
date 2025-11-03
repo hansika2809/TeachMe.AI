@@ -50,7 +50,7 @@ A key design choice is the use of different models for different jobs to optimiz
 
 ### **Step 1: Clone the Repository**
 ```bash
-git clone \[YOUR\_REPOSITORY\_URL\]  
+git clone https://github.com/hansika2809/TeachMe.AI.git
 cd \[PROJECT\_DIRECTORY\]
 ```
 
