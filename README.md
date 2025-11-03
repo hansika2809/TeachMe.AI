@@ -10,7 +10,6 @@
 
 This project, **TeachMe.AI**, is an intelligent agent prototype designed to function as a modular, reliable, and specialized study companion for students.
 
-Its mission is to automate common academic tasks such as **text summarization**, **code explanation**, and **quiz generation** with a higher degree of accuracy and reliability than a single, general-purpose Large Language Model (LLM) can provide.
 
 ### **Key Architectural Features**
 
