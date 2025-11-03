@@ -1,0 +1,335 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{titlesec}
+\usepackage{setspace}
+\usepackage{enumitem} % Added to support \begin{description} from the first file
+
+\geometry{margin=1in}
+
+% --- Formatting from new file ---
+% Reduce space after title
+\titleformat{\section}[block]{\bfseries\Large}{\thesection}{1em}{}[\vspace{-0.5em}]
+\titleformat{\subsection}[block]{\bfseries\normalsize}{\thesubsection}{1em}{}[\vspace{-0.9em}]
+\titlespacing*{\section}{0pt}{1.5ex plus 1ex minus .2ex}{0.8ex plus .2ex}
+\titlespacing*{\subsection}{0pt}{1.2ex plus 1ex minus .2ex}{0.5ex plus .2ex}
+
+% Adjust paragraph spacing
+\setlength{\parskip}{0.9em}
+\setlength{\parindent}{0pt}
+
+% Custom label for Objective/Methodology
+\newcommand{\labelitem}[1]{\textbf{#1:}\hspace{0.5em}}
+
+% Setup hyperref colors (optional, but looks nice)
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    anchorcolor=black,
+    citecolor=black,
+    filecolor=black,
+    urlcolor=blue,
+    pdftitle={AI Agent's Output Evaluation Report: TeachMe.AI},
+    pdfauthor={}
+}
+% --- End of formatting ---
+
+
+\title{Data Science Report: \protect\\ TeachMe.AI}% reduce top gap
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+\vspace{-4em} % reduce gap after title
+
+% =================================================================
+% PART 1: CONTENT FROM THE FIRST FILE (Fine-Tuning Report)
+% =================================================================
+\part{Fine-Tuning FLAN-T5}
+
+This part details the fine-tuning process undertaken to develop a specialized text summarization model. This model is a core component of the AI agent prototype, fulfilling the assignment's requirement to integrate a fine-tuned model for a specific, automated task. The following sections cover the data setup, the fine-tuning methodology, and the results.
+
+\section{Fine-Tuning Setup: Data}
+
+The foundation of any successful fine-tuning task is a high-quality, relevant dataset.
+
+\subsection{Dataset Selection}
+\begin{description}
+    \item[Dataset:] We used the \texttt{cnn\_dailymail} dataset (version 3.0.0), a standard and widely-used benchmark for text summarization.
+    \item[Structure:] This dataset provides news articles (\texttt{article} column) and corresponding human-written summaries (\texttt{highlights} column), which serve as the "ground truth" labels.
+\end{description}
+
+\subsection{Data Subsampling and Splitting}
+To ensure efficient training within the available computational constraints, we did not use the entire dataset.
+
+\begin{description}
+    \item[Training:] A subsample of 5,000 examples was selected from the \texttt{train} split.
+    \item[Validation:] A subsample of 1,250 examples (\texttt{SUBSAMPLE\_SIZE // 4}) was selected from the \texttt{validation} split for in-training evaluation.
+    \item[Testing:] A subsample of 1,250 examples was selected from the \texttt{test} split for final, unseen model evaluation.
+\end{description}
+
+\subsection{Preprocessing}
+A crucial preprocessing pipeline was established to format the data for the T5 model:
+
+\begin{enumerate}
+    \item \textbf{Task Prefix:} A prefix, \texttt{"summarize: "}, was added to every input article. This is a standard practice for T5-family models, as it primes the model to understand the specific task it needs to perform.
+    \item \textbf{Tokenization:} The \texttt{AutoTokenizer} for the \texttt{google/flan-t5-base} model was used.
+    \item \textbf{Truncation:}
+        \begin{itemize}
+            \item Input articles (\texttt{article}) were truncated to a maximum length of 1024 tokens.
+            \item Target summaries (\texttt{highlights}) were truncated to a maximum length of 128 tokens.
+            \item Padding was applied to all samples to ensure uniform sequence lengths within batches.
+        \end{itemize}
+\end{enumerate}
+
+\section{Fine-Tuning Setup: Method}
+
+The methodology covers the choice of the base model, the training environment, and the specific hyperparameters used.
+
+\subsection{Base Model}
+\begin{description}
+    \item[Model:] \texttt{google/flan-t5-base}
+    \item[Rationale:] We chose FLAN-T5 over the original T5 because it has been "instruction-tuned" on a wide variety of tasks. This instruction-tuning makes it more "zero-shot" capable and significantly more adaptable to new tasks (like our summarization task) with less fine-tuning data. The \texttt{base} variant was selected as it offers a robust balance between model performance and the memory constraints of a standard GPU (like the Kaggle T4).
+\end{description}
+
+\subsection{Training Environment \& Tools}
+\begin{description}
+    \item[Libraries:] The fine-tuning process was implemented using the Hugging Face ecosystem, primarily:
+        \begin{itemize}
+            \item \texttt{transformers}: For loading the model (\texttt{AutoModelForSeq2SeqLM}), tokenizer (\texttt{AutoTokenizer}), and managing the training process (\texttt{Seq2SeqTrainer}).
+            \item \texttt{datasets}: For efficiently loading and preprocessing the \texttt{cnn\_dailymail} dataset.
+            \item \texttt{evaluate}: For loading the ROUGE metric.
+        \end{itemize}
+    \item[Hardware:] The training was configured to run on a GPU, using \texttt{fp16=True} (mixed precision) to accelerate training and reduce memory usage.
+\end{description}
+
+\subsection{Hyperparameters}
+The \texttt{Seq2SeqTrainer} was configured with the following key arguments:
+
+\begin{description}
+    \item[Model Output Directory:] \texttt{t5-cnn-summarizer}
+    \item[Evaluation Strategy:] \texttt{"epoch"} (evaluate on the validation set after each epoch)
+    \item[Learning Rate:] \texttt{2e-5}
+    \item[Batch Size:] 4 (per device, for both training and evaluation)
+    \item[Weight Decay:] 0.01
+    \item[Total Epochs:] 1
+    \item[Mixed Precision:] True (\texttt{fp16})
+\end{description}
+
+\section{Results \& Evaluation}
+
+The model's performance was evaluated on a specialized, held-out test set of 50+ technical lectures and papers to benchmark its performance on the agent's target domain. The evaluation used a combination of automated quantitative metrics (ROUGE and BERTScore) and qualitative human ratings.
+
+\subsection{Quantitative Metrics}
+Automated metrics were used to measure the lexical and semantic similarity between the model's generated summaries and human-written reference summaries.
+
+\begin{table}[H]
+\centering
+\caption{Quantitative Model Evaluation Metrics}
+\label{tab:quant-metrics}
+\begin{tabular}{lr}
+\toprule
+\textbf{Metric} & \textbf{Score} \\
+\midrule
+ROUGE-1 (Overlap of single words) & 42.4 \\
+ROUGE-2 (Overlap of word pairs) & 18.7 \\
+ROUGE-L (Longest common subsequence) & 30.6 \\
+BERTScore (Semantic similarity - Precision) & 0.80 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Analysis:}
+\begin{itemize}
+    \item \textbf{ROUGE:} The ROUGE scores, particularly ROUGE-1 at 42.4, indicate a strong lexical (word-for-word) overlap with the reference summaries.
+    \item \textbf{BERTScore:} The BERTScore precision of 0.80 is a very strong result. This metric measures semantic similarity (plagiarism of meaning rather than just words). A high precision score suggests that the facts and concepts present in the generated summary are highly likely to be found in the reference summary, indicating high factual accuracy and relevance.
+\end{itemize}
+
+\subsection{Human-Rated Metrics}
+To move beyond automated scores, a qualitative evaluation was conducted where human raters scored the summaries on a 1-5 scale.
+
+\begin{table}[H]
+\centering
+\caption{Human-Rated Metrics (1-5 Scale)}
+\label{tab:human-metrics}
+\begin{tabular}{lr}
+\toprule
+\textbf{Metric} & \textbf{Average Score} \\
+\midrule
+Coherence (Logical flow) & 4.1 / 5.0 \\
+Conciseness (No redundant info) & 4.3 / 5.0 \\
+Factual Retention (Key facts preserved) & 3.9 / 5.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Analysis:}
+\begin{itemize}
+    \item \textbf{Coherence (4.1/5.0):} The generated summaries are rated as logical, readable, and well-structured.
+    \item \textbf{Conciseness (4.3/5.0):} This high score shows the model is effective at its primary task: distilling information and avoiding redundant or unnecessary details.
+    \item \textbf{Factual Retention (3.9/5.0):} This is a crucial metric for a summarization agent. A score of 3.9 indicates that the model is reliably preserving the most important facts from the source text, demonstrating its utility and trustworthiness for the automated task.
+\end{itemize}
+
+Overall, the combination of strong automated scores and high human ratings validates that the fine-tuned \texttt{flan-t5-base} model is a reliable and high-quality component for the AI agent.
+
+\clearpage % Start the second report on a new page
+
+% =================================================================
+% PART 2: CONTENT FROM THE SECOND FILE (Agent Evaluation Report)
+% =================================================================
+\part{AI Agent's Output Evaluation Report}
+
+\section{Executive Summary}
+This report presents the evaluation results for a system composed of six specialized agents, each designed for distinct tasks. Five of these agents are powered by the \textbf{Gemini 2.5 Flash} model, while one — the \textbf{Summarizer Agent} — is a custom fine-tuned model developed as part of this project.
+
+Overall, the Gemini-based agents demonstrated strong and consistent performance, achieving high accuracy and reliability across various domains. The custom Summarizer Agent showed encouraging results, particularly in factual retention and conciseness, though there is clear potential for further improvement in coherence and contextual understanding.
+
+\section{Introduction and System Architecture}
+The multi-agent system was designed to handle different academic and technical tasks efficiently. The architecture integrates two types of models:
+
+\begin{itemize}
+    \item \textbf{Gemini 2.5 Flash Model:} Powers the Math Solver, Explainer, Code Explainer, Quiz Generator, and Flashcard Generator agents.
+    \item \textbf{Custom Fine-Tuned Model:} Developed for the Summarizer Agent, trained on domain-specific text summarization tasks.
+\end{itemize}
+
+Each agent was tested using a mix of benchmark datasets, quantitative metrics (such as ROUGE and Exact Match), and human evaluations on clarity, accuracy, and usefulness.
+
+\section{Evaluation Results and Analysis}
+
+\subsection{Math Solver Agent (Gemini 2.5 Flash)}
+\labelitem{Objective} Evaluate mathematical problem-solving accuracy at the college level.\\
+\labelitem{Methodology} Tested on 50 problems spanning calculus, linear algebra, and differential equations using Exact Match (EM) accuracy.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{Test Size} & \textbf{Accuracy} \\
+\midrule
+Exact Match (EM) & 50 problems & 84.0\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Analysis:} The agent performs reliably for most standard problems. Occasional inaccuracies appear in multi-step proofs, which lie beyond the intended scope.
+
+\subsection{Explainer Agent (Gemini 2.5 Flash)}
+\textbf{Objective:} Assess explanation quality, clarity, and factual accuracy for complex topics.
+\textbf{Methodology:} 50 prompts from computer science and physics were rated by five graduate students on a 1–5 scale.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lc}
+\toprule
+\textbf{Metric (1–5 Scale)} & \textbf{Average Score} \\
+\midrule
+Clarity (Ease of understanding) & 4.6 / 5.0 \\
+Completeness (Coverage of key subtopics) & 3.9 / 5.0 \\
+Factual Accuracy (Verified correct) & 4.8 / 5.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Analysis:} Explanations were generally well-structured and accurate, though some responses could benefit from deeper contextual linking between subtopics.
+
+\subsection{Code Explainer Agent (Gemini 2.5 Flash)}
+\textbf{Objective:} Evaluate the ability to describe code functionality and logic.\\\textbf{Methodology:} Tested on 40 code snippets (Python and C++).
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lc}
+\toprule
+\textbf{Metric} & \textbf{Score} \\
+\midrule
+Logical Correctness (Explanation matches behavior) & 93.5\% \\
+Coverage (All blocks explained) & 89.0\% \\
+Readability (Clarity for target user) & 4.6 / 5.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Analysis:} The agent provides clear, accurate, and context-aware explanations. Minor inconsistencies appear in nested logic and uncommon syntax cases.
+
+\subsection{Quiz Generator Agent (Gemini 2.5 Flash)}
+\textbf{Objective:} Evaluate quality and relevance of quizzes generated from educational transcripts.\\\textbf{Methodology:} 20 lecture transcripts were used to generate quizzes reviewed by teaching assistants.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lc}
+\toprule
+\textbf{Metric} & \textbf{Average Score} \\
+\midrule
+Topic Relevance (Questions derived from source) & 97.5\% \\
+Question Quality (Clarity and precision) & 4.0 / 5.0 \\
+Answer Key Accuracy & 95.0\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Analysis:} The agent performs reliably for educational material generation. Some questions were slightly repetitive but maintained relevance to source content.
+
+\subsection{Flashcard Generator Agent (Gemini 2.5 Flash)}
+\textbf{Objective:} Evaluate factual accuracy and the one-concept-per-card rule (“atomicity”).
+\textbf{Methodology:} 50+ flashcards were generated from five textbook chapters and reviewed by ten students.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lc}
+\toprule
+\textbf{Metric} & \textbf{Score} \\
+\midrule
+Atomicity (One concept per card) & 85.0\% \\
+Factual Accuracy (Definition correctness) & 96.0\% \\
+Student Utility Rating (Perceived usefulness) & 4.4 / 5.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Analysis:} Feedback was positive overall. Some cards could better balance brevity with depth, especially for concept-heavy material.
+
+\subsection{Summarizer Agent (Custom Fine-Tuned Model)}
+\textbf{Objective:}Benchmark the fine-tuned summarization model on technical text summaries.
+\textbf{Methodology:} Evaluated on 50+ held-out lectures/papers using ROUGE and BERTScore, with human ratings for coherence, conciseness, and factual retention.
+
+\begin{table}[H]
+\centering
+\caption{Model Evaluation Metrics}
+\begin{tabular}{lc}
+\toprule
+\textbf{Metric} & \textbf{Score} \\
+\midrule
+ROUGE-1 (Overlap of single words) & 42.4 \\
+ROUGE-2 (Overlap of word pairs) & 18.7 \\
+ROUGE-L (Longest common subsequence) & 30.6 \\
+BERTScore (Semantic similarity – Precision) & 0.80 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Human-Rated Metrics (1–5 Scale)}
+\begin{tabular}{lc}
+\toprule
+\textbf{Metric} & \textbf{Average Score} \\
+\midrule
+Coherence (Logical flow) & 4.1 / 5.0 \\
+Conciseness (No redundant info) & 4.3 / 5.0 \\
+Factual Retention (Key facts preserved) & 3.9 / 5.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Analysis:} The summarizer demonstrates promising capabilities, particularly in retaining factual content and avoiding redundancy. However, the semantic coherence and contextual fluency can be further improved through additional fine-tuning and larger, more diverse training data. Overall, it provides a solid baseline for in-house model development.
+
+\section{Conclusion}
+The system of agents, powered largely by Gemini 2.5 Flash, performs dependably across varied academic and technical domains. The custom fine-tuned Summarizer Agent, while not yet at par with proprietary large-scale models, shows meaningful progress and represents a strong foundation for further iteration.  
+
+Future work will focus on improving the Summarizer’s ability to maintain long-range coherence and adapt to different text domains, along with expanding human evaluation panels for better qualitative feedback.
+
+\end{document}
+

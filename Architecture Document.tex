@@ -1,0 +1,194 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{geometry}
+\usepackage{float}
+\geometry{a4paper, margin=1in}
+\usepackage{booktabs} % For professional tables
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={AI Agent Architecture: TeachMe.AI},
+    pdfauthor={Kshitij Gupta},
+}
+\usepackage{tikz} % For flowcharts
+\usetikzlibrary{shapes.geometric, arrows, positioning}
+\usepackage{listings} % For code
+\usepackage{inconsolata}
+\lstset{
+    basicstyle=\small\ttfamily,
+    breaklines=true,
+    frame=single,
+    showstringspaces=false,
+}
+
+% --- Document Metadata ---
+\title{AI Agent Architecture Document: \protect\\ TeachMe.AI}
+\author{Hansika Gupta}
+\date{}
+
+
+\begin{document}
+
+\maketitle
+
+% --- Introduction Section ---
+\section{Introduction}
+
+\subsection{Project Mission}
+\textbf{TeachMe.AI} is an intelligent agent prototype designed to serve as a modular, reliable, and specialized study companion for students. Its mission is to automate common, high-stakes academic tasks—such as summarization, code explanation, and quiz generation—with a higher degree of accuracy than general-purpose LLMs can provide.
+
+\subsection{Architectural Philosophy & Choices}
+The core architecture of \texttt{TeachMe.AI} was designed from the ground up to support task specialization. A "monolithic" agent with a single, massive prompt is prone to task-bleeding, hallucination, and unreliability.
+
+Therefore, we selected a \textbf{Gated Router} (or \textbf{Orchestrator}) architecture. This design is composed of:
+\begin{enumerate}
+    \item A central \textbf{Router Agent} that classifies user intent.
+    \item A set of modular \textbf{Specialized "Worker" Agents} that perform specific tasks (e.g., "Text\_Summarizer", "Math\_Solver", "Code\_explainer").
+    
+\end{enumerate}
+
+The primary reason for this choice is \textbf{modularity}. This architecture allows any specialized agent to be independently upgraded or replaced. This project leverages this design to integrate a custom-fine-tuned summarization model, demonstrating the system's core hypothesis: specialized agents will always outperform generalized ones on their specific tasks.
+
+\subsection{Document Purpose}
+This document details the complete architecture of the \texttt{TeachMe.AI} prototype. It covers all required components, including the individual agents, the models used, the data interaction flow, and the reasoning for key design decisions.
+
+
+% --- System Overview Section ---
+% --- System Overview Section (Simplified) ---
+% --- System Overview Section (Compact) ---
+% --- System Overview Section (Revised with Rationale) ---
+\section{System Overview}
+The \texttt{TeachMe.AI} system is a multi-stage pipeline that processes user input through a series of validation, routing, and execution steps. The architecture is intentionally designed as a \textbf{Gated Router} (or \textbf{Orchestrator}) pattern.
+
+\subsection{Architectural Choice \& Rationale}
+This "Gated Router" architecture was chosen over a single, monolithic agent for several critical reasons:
+\begin{itemize}
+    \item \textbf{Modularity \& Scalability:} The design is inherently modular. New capabilities (e.g., a "Wikipedia Search Agent") can be added simply by creating a new agent and adding it to the router's "handoff" list, without modifying any other agent.
+    \item \textbf{Task Specialization \& Reliability:} Instead of one massive, complex prompt, each of the 10 worker agents has its own focused set of instructions (e.g., \texttt{Math\_Problem\_Solver}). This specialization makes each agent an expert at its one task, leading to significantly more reliable and accurate outputs.
+    \item \textbf{Enables Targeted Fine-Tuning:} This is the most important advantage for this project. The architecture allows us to "plug-and-play" different models for different agents. We can use a fast, cost-effective model (Gemini 2.5 Flash) for simple tasks like routing and a powerful, custom-fine-tuned model (T5 model) for a single, token-heavy task like summarization.
+    \item \textbf{Controlled \& Safe:} The "gated" part of the design, which uses meta-agent guardrails, provides intelligent, context-aware safety checks that simple regex filters cannot.
+\end{itemize}
+
+\subsection{Interaction Flow}
+The high-level data flow, illustrated in Figure~\ref{fig:flowchart}, begins with the user interface, passes through pre-processing and safety guardrails, is routed to a specialized agent, and is finally validated by output guardrails before being returned to the user.
+
+% --- The [H] specifier requires the 'float' package: \usepackage{float} ---
+\begin{figure}[htbp] 
+\centering
+% Define tikz styles (COMPACT)
+\tikzstyle{block} = [rectangle, draw, fill=blue!20, 
+    text width=8em, text centered, rounded corners, minimum height=3em]
+\tikzstyle{io} = [trapezium, trapezium left angle=70, trapezium right angle=110, 
+    draw, fill=green!20, text width=7em, text centered, minimum height=3em]
+\tikzstyle{guardrail} = [diamond, draw, fill=red!20, 
+    text width=7em, text badly centered, minimum height=3em, inner sep=0pt]
+\tikzstyle{decision} = [diamond, draw, fill=orange!20, 
+    text width=7em, text badly centered, minimum height=3em, inner sep=0pt]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{worker} = [rectangle, draw, fill=blue!10, 
+    text width=8em, text centered, rounded corners, minimum height=3em]
+
+% Node distance is reduced for a smaller layout
+\begin{tikzpicture}[node distance = 1.3cm and 0.8cm]
+    % Place nodes
+    \node (input) [io] {User Input \& Files (Chainlit UI)};
+    \node (parser) [block, below=of input] {File Parser \& Pre-processor};
+    \node (router) [decision, below=of parser] {Router Agent (TeachMe.AI)};
+    
+    % Xshift is reduced to bring branches closer
+    \node (worker) [worker, below left=of router, xshift=-2.5cm] {Specialized Agent (e.g., Summarizer)};
+    \node (direct) [worker, below right=of router, xshift=2.5cm] {Direct Answer (General Query)};
+    
+    % Yshift is reduced to bring node up
+    \node (response_agg) [block, below=of router, yshift=-1.2cm, text width=5em] {Generated Response};
+    
+    \node (output) [io, below=of response_agg] {Final Response (Chainlit UI)};
+
+    % Draw edges
+    \path [line] (input) -- (parser);
+    \path [line] (parser) -- (router);
+    
+    % MODIFIED LINES: Added 'sloped' and removed x/y shifts
+    \path [line] (router) -- node [above, sloped] {Handoff} (worker);
+    \path [line] (router) -- node [above, sloped] {General} (direct);
+    
+    \path [line] (worker) -- (response_agg);
+    \path [line] (direct) -- (response_agg);
+    
+    \path [line] (response_agg) -- (output);
+\end{tikzpicture}
+\caption{The \texttt{TeachMe.AI} "Gated Router" Interaction Flow (Compact).}
+\label{fig:flowchart}
+\end{figure}
+% --- Core Components Section ---
+\section{Core Components}
+The \texttt{TeachMe.AI} system is composed of four primary component types: the central Router, the specialized Worker Agents, the Meta-Agent Guardrails, and the UI/Pre-processing layer.
+
+\subsection{The Router Agent (TeachMe.AI)}
+This is the central "brain" of the application. Its purpose is not to answer complex questions directly, but to act as an intelligent \textbf{orchestrator}.
+\begin{itemize}
+    \item \textbf{Prompting Strategy:} The agent is instructed to analyze the user's prompt (and the chat history) and determine the best course of action. It can either hand off to a specialized agent or answer a simple conversational query directly.
+    \item \textbf{Handoffs:} The router has a list of 10 "handoff" agents it can delegate to. This modularity is the key to the system's design.
+\end{itemize}
+
+\subsection{The Specialized "Worker" Agents}
+These are 6 distinct agents, each with a highly focused prompt that instructs it to perform one task exceptionally well. This separation of concerns prevents "prompt bleeding" and improves reliability. The available agents are listed in Table~\ref{tab:agents}.
+
+\begin{table}[h!]
+\centering
+\caption{List of Specialized Worker Agents}
+\label{tab:agents}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Agent Name & Purpose \\ \midrule
+\texttt{Text\_Summarizer} & Summarizes text from input or files \\
+\texttt{Concept\_Explainer} & Explains complex concepts simply \\
+\texttt{Quiz\_Generator} & Creates quizzes from topics or files \\
+\texttt{FlashCard\_Generator\_Agent} & Generates flashcards for active recall \\
+\texttt{Code\_Explainer\_Agent} & Explains and debugs source code \\
+\texttt{Math\_Problem\_Solver} & Solves math problems step-by-step \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\subsection{UI and Pre-processing Layer}
+\begin{itemize}
+    \item \textbf{Frontend:} The application uses \texttt{Chainlit} to provide the chat interface, manage user sessions, and handle file uploads.
+    \item \textbf{File Handling:} When a user uploads a file, the \texttt{@cl.on\_message} function parses it *before* any agent is called. It extracts text from \texttt{.pdf}, \texttt{.docx}, \texttt{.txt}, and code files, and appends this text to the user's prompt. This crucial step simplifies the agents, as they only need to process plain text.
+\end{itemize}
+
+% --- Models Used Section ---
+\section{Models Used}
+A key design choice in this architecture is the separation of models. Instead of relying on one "god model," \texttt{TeachMe.AI} uses a mix of models, selecting the best one for each specific job.
+
+\subsection{Generalist Model: Gemini 2.5 Flash}
+The majority of the system's "thinking" is powered by Google's Gemini 2.5 Flash model.
+\begin{itemize}
+    \item \textbf{Usage:} This model is used for all "fast" and general-purpose tasks:
+        \begin{itemize}
+            \item The \texttt{TeachMe.AI} Router Agent
+    
+            \item 5 out of the 6 Specialized Worker Agents (all except the Summarizer)
+        \end{itemize}
+    \item \textbf{Reasoning:} Gemini 2.5 Flash was chosen for its optimal balance of speed, capability, and cost-efficiency. For tasks like routing, classification (guardrails), and short-form answers (e.g., \texttt{Concept\_Explainer}), its low latency provides a responsive user experience.
+\end{itemize}
+
+\subsection{Fine Tuned Model: Flan-T5-Base Model.}
+This model is the core of the assignment and represents the system's "specialized component".
+
+\begin{itemize}
+    \item \textbf{Usage:} This model is used exclusively by the \texttt{Text\_Summarizer\_Agent}. By custom-fine-tuning the \textbf{Flan-T5-Base model} on online available dataset (CNN\_dailymail), the model is able to summarize the daily class lectures.
+    \item \textbf{Integration:} The fine-tuned \textbf{Flan-T5-Base model} is hosted as a separate endpoint (on Modal AI). The \texttt{Text\_Summarizer\_Agent} is configured to call this endpoint instead of the default Gemini model for summarizing task.
+    \item \textbf{Reasoning:} This was a deliberate economic and performance choice. 
+        \begin{enumerate}
+            \item \textbf{Cost-Effectiveness:} Summarization is the most token-heavy task in the application. Processing large PDF or DOCX files with a pay-per-token API, especially on a free tier, is not scalable. Using a highly efficient, open-source 8B model is significantly more cost-effective.
+            \item \textbf{Task Specialization:} It produces accurate, concise, and reliable summaries.
+        \end{enumerate}
+\end{itemize}
+\end{document}
