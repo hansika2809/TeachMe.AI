@@ -13,7 +13,7 @@
     filecolor=magenta,      
     urlcolor=cyan,
     pdftitle={AI Agent Architecture: TeachMe.AI},
-    pdfauthor={Kshitij Gupta},
+    pdfauthor={Hansika Gupta},
 }
 \usepackage{tikz} % For flowcharts
 \usetikzlibrary{shapes.geometric, arrows, positioning}
@@ -183,7 +183,7 @@ The majority of the system's "thinking" is powered by Google's Gemini 2.5 Flash 
 This model is the core of the assignment and represents the system's "specialized component".
 
 \begin{itemize}
-    \item \textbf{Usage:} This model is used exclusively by the \texttt{Text\_Summarizer\_Agent}. By custom-fine-tuning the \textbf{Flan-T5-Base model} on online available dataset (CNN\_dailymail), the model is able to summarize the daily class lectures.
+    \item \textbf{Usage:} This model is used exclusively by the \texttt{Text\_Summarizer\_Agent}. By custom-fine-tuning the \textbf{Flan-T5-Base model} on online available dataset (arXiv), the model is able to summarize the daily class lectures notes and pdfs.
     \item \textbf{Integration:} The fine-tuned \textbf{Flan-T5-Base model} is hosted as a separate endpoint (on Modal AI). The \texttt{Text\_Summarizer\_Agent} is configured to call this endpoint instead of the default Gemini model for summarizing task.
     \item \textbf{Reasoning:} This was a deliberate economic and performance choice. 
         \begin{enumerate}
