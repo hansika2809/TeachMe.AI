@@ -34,12 +34,12 @@ A key design choice is the use of different models for different jobs to optimiz
   * This model is used for all "fast" and general-purpose tasks.  
   * It powers the main **Router Agent** (for intent classification) and 5 out of the 6 **Worker Agents** (like Concept\_Explainer, Math\_Problem\_Solver, etc.).  
   * It was chosen for its excellent balance of speed, capability, and cost-efficiency.  
-* **Specialized Model (Fine-Tuned T5):**  
+* **Specialized Model (Fine-Tuned FLAN T5 Base):**  
   * **This is the core of the assignment.**  
-  * A **Text-to-Text Transfer Transformer (T5)** model was fine-tuned on the "arXiv" dataset to become an expert in summarization.  
+  * A **Text-to-Text Transfer Transformer ( FLAN T5 BASE)** model was fine-tuned on the "arXiv" dataset to become an expert in summarization.  
   * This specialized model is used *exclusively* by the Text\_Summarizer\_Agent.  
 * **Model Hosting (Modal AI):**  
-  * To make this architecture work, the fine-tuned T5 model is hosted as a separate API endpoint using **Modal AI**.  
+  * To make this architecture work, the fine-tuned FLAN T5 model is hosted as a separate API endpoint using **Modal AI**.  
   * When the Router Agent hands off a task to the Text\_Summarizer\_Agent, that agent is configured to call the Modal AI endpoint to get the summary, rather than calling the Gemini API.  
 * **Frontend & File Handling (Chainlit):**  
   * The chat interface is built using **Chainlit**.  
