@@ -81,7 +81,7 @@ A crucial preprocessing pipeline was established to format the data for the T5 m
     \item \textbf{Truncation:}
         \begin{itemize}
             \item Input articles (\texttt{article}) were truncated to a maximum length of 1024 tokens.
-            \item Target summaries (\texttt{highlights}) were truncated to a maximum length of 128 tokens.
+            \item Target summaries (\texttt{highlights}) were truncated to a maximum length of 256 tokens.
             \item Padding was applied to all samples to ensure uniform sequence lengths within batches.
         \end{itemize}
 \end{enumerate}
@@ -116,7 +116,7 @@ The \texttt{Seq2SeqTrainer} was configured with the following key arguments:
     \item[Learning Rate:] \texttt{2e-5}
     \item[Batch Size:] 4 (per device, for both training and evaluation)
     \item[Weight Decay:] 0.01
-    \item[Total Epochs:] 1
+    \item[Total Epochs:] 2
     \item[Mixed Precision:] True (\texttt{fp16})
 \end{description}
 
@@ -136,9 +136,9 @@ Automated metrics were used to measure the lexical and semantic similarity betwe
 \textbf{Metric} & \textbf{Score} \\
 \midrule
 ROUGE-1 (Overlap of single words) & 42.4 \\
-ROUGE-2 (Overlap of word pairs) & 18.7 \\
-ROUGE-L (Longest common subsequence) & 30.6 \\
-BERTScore (Semantic similarity - Precision) & 0.80 \\
+ROUGE-2 (Overlap of word pairs) & 20.1 \\
+ROUGE-L (Longest common subsequence) & 39 \\
+BERTScore (Semantic similarity - Precision) & 0.85 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -146,7 +146,7 @@ BERTScore (Semantic similarity - Precision) & 0.80 \\
 \textbf{Analysis:}
 \begin{itemize}
     \item \textbf{ROUGE:} The ROUGE scores, particularly ROUGE-1 at 42.4, indicate a strong lexical (word-for-word) overlap with the reference summaries.
-    \item \textbf{BERTScore:} The BERTScore precision of 0.80 is a very strong result. This metric measures semantic similarity (plagiarism of meaning rather than just words). A high precision score suggests that the facts and concepts present in the generated summary are highly likely to be found in the reference summary, indicating high factual accuracy and relevance.
+    \item \textbf{BERTScore:} The BERTScore precision of 0.85 is a very strong result. This metric measures semantic similarity (plagiarism of meaning rather than just words). A high precision score suggests that the facts and concepts present in the generated summary are highly likely to be found in the reference summary, indicating high factual accuracy and relevance.
 \end{itemize}
 
 \subsection{Human-Rated Metrics}
