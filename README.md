@@ -36,7 +36,7 @@ A key design choice is the use of different models for different jobs to optimiz
   * It was chosen for its excellent balance of speed, capability, and cost-efficiency.  
 * **Specialized Model (Fine-Tuned T5):**  
   * **This is the core of the assignment.**  
-  * A **Text-to-Text Transfer Transformer (T5)** model was fine-tuned on the "CNN Daily Mail" dataset to become an expert in summarization.  
+  * A **Text-to-Text Transfer Transformer (T5)** model was fine-tuned on the "arXiv" dataset to become an expert in summarization.  
   * This specialized model is used *exclusively* by the Text\_Summarizer\_Agent.  
 * **Model Hosting (Modal AI):**  
   * To make this architecture work, the fine-tuned T5 model is hosted as a separate API endpoint using **Modal AI**.  
